@@ -62,6 +62,10 @@ print
 
 | PRINTLN '"'expr'"' {System.out.println($expr.value);}
 
+| PRINT STRING {System.out.print($STRING.text);}
+
+| PRINTLN STRING {System.out.println($STRING.text);}
+
 ;
 
 
@@ -78,8 +82,7 @@ atom returns [int value]
 : INT {$value = Integer.parseInt($INT.text);}
 
 | ID
-
-| STRING	
+	
 
 {
 
@@ -100,7 +103,7 @@ ID : ('a'..'z'|'A'..'Z')+ ;
 
 INT : '0'..'9'+ ;
 
-STRING	:'"'('a'..'z'|'A'..'Z'|'0'..'9' )('a'..'z'|'A'..'Z'|'0'..'9'|WS)*'"';	
+STRING	:'"'('a'..'z'|'A'..'Z'|'0'..'9' )('a'..'z'|'A'..'Z'|'0'..'9'|(' ')+)*'"';
 
 NEWLINE:'\r'? '\n' ;
 
