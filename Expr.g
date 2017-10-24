@@ -29,7 +29,7 @@ package expressionparser;
 /** Map variable name to Integer object holding value */
 
 HashMap memory = new HashMap();
-
+Scanner mScanner = new Scanner(System.in);
 }
 
 
@@ -56,17 +56,18 @@ stat: expr NEWLINE {System.out.println($expr.value);}
 
 expr returns [int value]
 
-: e=multExpr {$value = $e.value;}
+: e=atom {$value = $e.value;}
 
-( (' ')? '+' (' ')? e=multExpr {$value += $e.value;}
-| (' ')? '-' (' ')? e=multExpr {$value -= $e.value;}
-| (' ')? '/' (' ')? e=multExpr {$value /= $e.value;}	
+( (' ')? '+' (' ')? e=atom {$value += $e.value;}
+| (' ')? '-' (' ')? e=atom {$value -= $e.value;}
+| (' ')? '/' (' ')? e=atom {$value /= $e.value;}
+| (' ')? '*' (' ')? e=atom {$value *= $e.value;}		
 )*
 
 ;
 
 print 
-: PRINT ' ' expr {System.out.print($expr.value);}
+: PRINT ' ' expr {System.out.print($expr.value);}	
 
 | PRINTLN ' ' expr {System.out.println($expr.value);}
 
@@ -84,7 +85,7 @@ multExpr returns [int value]
 ;
 
 int_declaration
-: INTEGER ' ' ((',')? (' ')? int_ID)+ {System.out.println(memory.keySet().size());}
+: INTEGER ' ' (int_id ((',')(' ')?)*)+ {System.out.println(memory.keySet().size());}
 
 ;
 
@@ -96,21 +97,26 @@ initialization
 
 value_input
 
-: INPUT	' ' ID 
+: INPUT	' ' (input_id ((',')(' ')?)*)+  
+
+{System.out.println(memory.get($input_id.text));}
+;
+
+input_id
+
+: ID 
 
 {	
 	if(memory.containsKey($ID.text)) {
-		Scanner s = new Scanner(System.in);
-		int v = s.nextInt();
+		int v = mScanner.nextInt();
 		memory.put($ID.text, v);
 	} else 
 		System.err.println("undefined variable "+$ID.text);	
 } 
 
-{System.out.println(memory.get($ID.text));}
 ;
 
-int_ID
+int_id
 
 : ID {memory.put($ID.text, null);}
 ;
@@ -120,7 +126,7 @@ atom returns [int value]
 
 : INT {$value = Integer.parseInt($INT.text);}
 
-| ID {memory.put($ID.text, null);}
+| ID
 	
 
 {
