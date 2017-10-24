@@ -38,7 +38,7 @@ prog: stat+ ;
 
 stat: expr NEWLINE {System.out.println($expr.value);}
 
-| ID (' ')? '=' (' ')? expr {memory.put($ID.text, $expr.value); System.out.println(memory.get($ID.text));} NEWLINE
+| ID (' ')? '=' (' ')? expr {if(memory.containsKey($ID.text)) {memory.put($ID.text, $expr.value); System.out.println(memory.get($ID.text));} else System.err.println("undefined variable "+$ID.text); } NEWLINE
 
 | NEWLINE {System.out.println("A newline has been issued");}
 
@@ -78,14 +78,8 @@ print
 ;
 
 
-multExpr returns [int value]
-
-: e=atom {$value = $e.value;} ((' ')? '*' (' ')? e=atom {$value *= $e.value;})*
-
-;
-
 int_declaration
-: INTEGER ' ' (int_id ((',')(' ')?)*)+ {System.out.println(memory.keySet().size());}
+: INTEGER ' ' (int_id ((',')(' ')?)*)+
 
 ;
 
