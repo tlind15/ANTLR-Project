@@ -4,6 +4,8 @@ tokens {
 	PRINT = 'PRINT';
 	PRINTLN = 'PRINTLN';
 	INTEGER='INTEGER';
+	LET = 'LET';
+	INPUT = 'INPUT';
 	END = 'END';
 }
 
@@ -11,7 +13,7 @@ tokens {
 
 package expressionparser;
 import java.util.HashMap;
-
+import java.util.Scanner;
 }
 
 @lexer::header {
@@ -36,13 +38,17 @@ prog: stat+ ;
 
 stat: expr NEWLINE {System.out.println($expr.value);}
 
-| ID (' ')? '=' (' ')? expr NEWLINE {}
+| ID (' ')? '=' (' ')? expr {memory.put($ID.text, $expr.value); System.out.println(memory.get($ID.text));} NEWLINE
 
 | NEWLINE {System.out.println("A newline has been issued");}
 
 | print NEWLINE	
 
 | int_declaration NEWLINE
+
+| initialization
+
+| value_input	
 
 | terminate		
 
@@ -52,9 +58,9 @@ expr returns [int value]
 
 : e=multExpr {$value = $e.value;}
 
-( '+' e=multExpr {$value += $e.value; } 
-| '-' e=multExpr {$value -= $e.value;}
-| '/' e=multExpr {$value /= $e.value;}
+( (' ')? '+' (' ')? e=multExpr {$value += $e.value;}
+| (' ')? '-' (' ')? e=multExpr {$value -= $e.value;}
+| (' ')? '/' (' ')? e=multExpr {$value /= $e.value;}	
 )*
 
 ;
@@ -73,13 +79,40 @@ print
 
 multExpr returns [int value]
 
-: e=atom {$value = $e.value;} ('*' e=atom {$value *= $e.value;})*
+: e=atom {$value = $e.value;} ((' ')? '*' (' ')? e=atom {$value *= $e.value;})*
 
 ;
 
 int_declaration
-: INTEGER ' ' ((',')? (' ')? ID)+
+: INTEGER ' ' ((',')? (' ')? int_ID)+ {System.out.println(memory.keySet().size());}
 
+;
+
+initialization
+
+: LET (' ') ID (' ')? '=' (' ')? expr {if(memory.containsKey($ID.text)) memory.put($ID.text, $expr.value); else System.err.println("undefined variable "+$ID.text);} {System.out.println(memory.get($ID.text));}
+
+;
+
+value_input
+
+: INPUT	' ' ID 
+
+{	
+	if(memory.containsKey($ID.text)) {
+		Scanner s = new Scanner(System.in);
+		int v = s.nextInt();
+		memory.put($ID.text, v);
+	} else 
+		System.err.println("undefined variable "+$ID.text);	
+} 
+
+{System.out.println(memory.get($ID.text));}
+;
+
+int_ID
+
+: ID {memory.put($ID.text, null);}
 ;
 
 
@@ -87,16 +120,17 @@ atom returns [int value]
 
 : INT {$value = Integer.parseInt($INT.text);}
 
-| ID 
+| ID {memory.put($ID.text, null);}
 	
 
 {
 
 Integer v = (Integer)memory.get($ID.text);
 
+
 if ( v!=null ) {$value = v.intValue(); memory.put($ID.text, $value);}
 
-else System.err.println("undefined variable "+$ID.text);
+/*else System.err.println("undefined variable "+$ID.text);*/
 
 }
 
@@ -116,7 +150,7 @@ ID : ('a'..'z'|'A'..'Z')('a'..'z'|'A'..'Z'|'0'..'9')* ;
 
 INT : '0'..'9'+ ;
 
-STRING : '"'('a'..'z'|'A'..'Z'|'0'..'9' )('a'..'z'|'A'..'Z'|'0'..'9'|(' ')+)*'"';
+STRING : '"'('a'..'z'|'A'..'Z'|'0'..'9' )('\u0020'..'\u007E')* '"';
 
 NEWLINE:'\r'? '\n' ;
 
