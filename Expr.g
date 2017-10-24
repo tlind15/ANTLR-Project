@@ -33,25 +33,25 @@ Scanner mScanner = new Scanner(System.in);
 }
 
 
-prog: stat+ ;
+prog: stat+ terminate ;
 
 
-stat: expr NEWLINE {System.out.println($expr.value);}
+stat: expr {System.out.println($expr.value);}
 
-| ID (' ')? '=' (' ')? expr {if(memory.containsKey($ID.text)) {memory.put($ID.text, $expr.value); System.out.println(memory.get($ID.text));} else System.err.println("undefined variable "+$ID.text); } NEWLINE
+| NEWLINE
 
-| NEWLINE {System.out.println("A newline has been issued");}
+| print ((' ')* COMMENT_STRING)?
 
-| print NEWLINE	
+| int_declaration 
 
-| int_declaration NEWLINE
+| initialization 
 
-| initialization
+| value_input
 
-| value_input	
+| COMMENT_STRING	
 
-| terminate		
-
+/*| comment NEWLINE*/	  	
+	
 ;
 
 expr returns [int value]
@@ -67,33 +67,32 @@ expr returns [int value]
 ;
 
 print 
-: PRINT ' ' expr {System.out.print($expr.value);}	
+: PRINT (' '|'\t') expr {System.out.print($expr.value);}	
 
-| PRINTLN ' ' expr {System.out.println($expr.value);}
+| PRINTLN (' '|'\t') expr {System.out.println($expr.value);}
 
-| PRINT ' ' STRING {System.out.print($STRING.text.substring(1, $STRING.text.length()-1));}
+| PRINT (' '|'\t') STRING {System.out.print($STRING.text.substring(1, $STRING.text.length()-1));}
 
-| PRINTLN ' ' STRING {System.out.println($STRING.text.substring(1, $STRING.text.length()-1));}
+| PRINTLN (' '|'\t') STRING {System.out.println($STRING.text.substring(1, $STRING.text.length()-1));}
 
 ;
 
 
 int_declaration
-: INTEGER ' ' (int_id ((',')(' ')?)*)+
+: INTEGER (' '|'\t') (int_id ((',')(' ')?)*)+ 
 
 ;
 
 initialization
 
-: LET (' ') ID (' ')? '=' (' ')? expr {if(memory.containsKey($ID.text)) memory.put($ID.text, $expr.value); else System.err.println("undefined variable "+$ID.text);} {System.out.println(memory.get($ID.text));}
+: LET (' '|'\t') ID (' ')? '=' (' ')? expr {if(memory.containsKey($ID.text)) memory.put($ID.text, $expr.value); else System.err.println("undefined variable "+$ID.text);}
 
 ;
 
 value_input
 
-: INPUT	' ' (input_id ((',')(' ')?)*)+  
+: INPUT	(' '|'\t') (input_id ((',')(' ')?)*)+  
 
-{System.out.println(memory.get($input_id.text));}
 ;
 
 input_id
@@ -112,7 +111,7 @@ input_id
 
 int_id
 
-: ID {memory.put($ID.text, null);}
+: ID {if (!memory.containsKey($ID.text)) memory.put($ID.text, null); else System.err.println("A variable with name " + $ID.text + " is already defined in this scope");}
 ;
 
 
@@ -138,6 +137,7 @@ if ( v!=null ) {$value = v.intValue(); memory.put($ID.text, $value);}
 
 ;
 
+
 terminate
 
 : END {System.out.println("Program finished"); System.exit(0);}
@@ -146,15 +146,18 @@ terminate
 
 
 
-ID : ('a'..'z'|'A'..'Z')('a'..'z'|'A'..'Z'|'0'..'9')* ;
+ID : ('a'..'z'|'A'..'Z')('a'..'z'|'A'..'Z'|'0'..'9'|'_')* ;
 
 INT : '0'..'9'+ ;
 
 STRING : '"'('a'..'z'|'A'..'Z'|'0'..'9' )('\u0020'..'\u007E')* '"';
 
+COMMENT_STRING : '//' (' ')* ('a'..'z'|'A'..'Z'|'0'..'9' )('\u0020'..'\u007E')* ;
+
 NEWLINE:'\r'? '\n' ;
 
-WS : (' '|'\t')+ {skip();} ;
+WS : (' '|'\t')+ {skip();};
+
 
 
 
