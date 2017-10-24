@@ -36,21 +36,19 @@ Scanner mScanner = new Scanner(System.in);
 prog: stat+ terminate ;
 
 
-stat: expr {System.out.println($expr.value);}
+stat: expr ((' ')* COMMENT_STRING)? {System.out.println($expr.value);}
 
 | NEWLINE
 
 | print ((' ')* COMMENT_STRING)?
 
-| int_declaration 
+| int_declaration ((' ')* COMMENT_STRING)? 
 
-| initialization 
+| initialization //theres no comment string here bc expr alreadd allows for a comment string
 
-| value_input
+| value_input ((' ')* COMMENT_STRING)?
 
-| COMMENT_STRING	
-
-/*| comment NEWLINE*/	  	
+| COMMENT_STRING	  	
 	
 ;
 
@@ -85,7 +83,15 @@ int_declaration
 
 initialization
 
-: LET (' '|'\t') ID (' ')? '=' (' ')? expr {if(memory.containsKey($ID.text)) memory.put($ID.text, $expr.value); else System.err.println("undefined variable "+$ID.text);}
+: LET (' '|'\t') ID (' ')? '=' (' ')? expr 
+
+{
+	System.out.println($expr.value);
+		if(memory.containsKey($ID.text)) 
+			memory.put($ID.text, $expr.value); 
+		else 
+			System.err.println("undefined variable "+$ID.text);	
+}
 
 ;
 
@@ -100,10 +106,16 @@ input_id
 : ID 
 
 {	
-	if(memory.containsKey($ID.text)) {
-		int v = mScanner.nextInt();
-		memory.put($ID.text, v);
-	} else 
+	int v;
+	if(memory.containsKey($ID.text)) 
+		try {
+			v = mScanner.nextInt();
+		} catch (java.util.InputMismatchException e) {
+			System.err.println("Error: Could not store value as type 'INTEGER'");
+			System.exit(0);
+		}
+		
+	else 
 		System.err.println("undefined variable "+$ID.text);	
 } 
 
@@ -117,7 +129,13 @@ int_id
 
 atom returns [int value]
 
-: INT {$value = Integer.parseInt($INT.text);}
+: INT 
+{
+	if (Integer.parseInt($INT.text) > Integer.MIN_VALUE && Integer.parseInt($INT.text) < Integer.MAX_VALUE)
+		$value = Integer.parseInt($INT.text);
+	else
+		System.err.println("Value " + $INT.text + " out of range");
+}
 
 | ID
 	
